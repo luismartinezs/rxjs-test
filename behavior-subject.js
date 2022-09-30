@@ -1,5 +1,6 @@
 import { BehaviorSubject } from 'rxjs';
 // BehaviorSubject is a Subject with a notion of "the current value".
+// good for representing "values over time"
 
 const subject = new BehaviorSubject(0); // 0 is the initial value
 
