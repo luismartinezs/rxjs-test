@@ -1,6 +1,12 @@
-import { BehaviorSubject } from 'rxjs';
+import {
+  BehaviorSubject, throttleTime, tap
+} from 'rxjs';
 
-const sub$ = new BehaviorSubject(0);
+const THROTTLE_TIME = 500;
+const INITIAL_VALUE = 0;
+
+const sub$ = new BehaviorSubject(INITIAL_VALUE);
+const source$ = sub$.pipe(tap(x => console.log('Processing: ', x)), throttleTime(THROTTLE_TIME, undefined, { leading: true, trailing: true }),);
 
 function add() {
   sub$.next(sub$.getValue() + 1);
@@ -17,13 +23,17 @@ function obsComp(timeout = 1_000) {
   }, timeout)
 }
 
-function subComp(cb) {
-  sub$.subscribe({ next: cb });
+function subComp(source, cb) {
+  source.subscribe({ next: cb });
 }
 
-subComp((v) => console.log(`subComp: ${v}`));
-obsComp()
-obsComp()
-obsComp()
-obsComp()
-obsComp(3_000)
+subComp(source$, (v) => console.log(v));
+
+obsComp(THROTTLE_TIME + 100)
+setTimeout(() => obsComp(200), 100)
+setTimeout(() => obsComp(200), 100)
+setTimeout(() => obsComp(200), 100)
+setTimeout(() => obsComp(200), 100)
+setTimeout(() => obsComp(600), 400)
+setTimeout(() => obsComp(100), 600)
+
