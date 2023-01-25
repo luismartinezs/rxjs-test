@@ -19,4 +19,4 @@ setTimeout(() => {
 }, 1000);
 setTimeout(() => {
   subject$.next(4);
-}, 1500 + 2100);
+}, 1500 + 2100)
