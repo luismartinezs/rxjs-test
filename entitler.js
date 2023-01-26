@@ -1,4 +1,4 @@
-import { BehaviorSubject, map, distinctUntilChanged, debounce, timer, merge, debounceTime, delay } from 'rxjs';
+import { BehaviorSubject, map, distinctUntilChanged, debounce, timer, merge, debounceTime, delay, tap } from 'rxjs';
 
 import { delayCall } from './util.js';
 
@@ -17,6 +17,8 @@ const EMPTY = 'empty'
 const documentEntitlerItems$ = new BehaviorSubject([])
 
 const announcedIds = new Set()
+
+let pipelineRunCount = 0
 
 function addAnnouncedId(id) {
   if (id) {
@@ -73,11 +75,12 @@ function emitAfterTimeout(source$, timeout, value) {
 
 
 function subscribeToAnnouncedTitle(callback) {
-  const debouncedAnnouncedTitleItem$ = pipeDocumentEntitlerItems((state) => {
-    return state.sort(sortByPriority)[0]
-  }, TITLE_DEBOUNCE_TIME)
-
-  const announcedTitle$ = debouncedAnnouncedTitleItem$.pipe(
+  const announcedTitle$ = documentEntitlerItems$.pipe(
+    map((state) => {
+      return state.sort(sortByPriority)[0]
+    }),
+    distinctUntilChanged(),
+    debounce(() => timer(TITLE_DEBOUNCE_TIME)),
     map((item) => {
       if (!item) {
         return EMPTY
@@ -98,6 +101,10 @@ function subscribeToAnnouncedTitle(callback) {
       } else {
         return EMPTY
       }
+    }),
+    tap(() => {
+      pipelineRunCount++
+      console.log('pipelineRunCount', pipelineRunCount);
     })
   )
 
