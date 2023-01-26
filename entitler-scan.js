@@ -189,6 +189,7 @@ function parseValue(val) {
   return JSON.stringify(val)
 }
 
+// eslint-disable-next-line no-unused-vars
 const FakeComponent = (label) => {
   subscribeToAnnouncedTitle(val => console.log(`${label}: ${parseValue(val)}`))
 }
