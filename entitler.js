@@ -12,6 +12,7 @@ export const PRIORITY_SORT_MAP = Object.freeze({
 
 const TITLE_DEBOUNCE_TIME = 100
 const TITLE_LIVE_REGION_TIMEOUT = 1e3
+const EMPTY = 'empty'
 
 const documentEntitlerItems$ = new BehaviorSubject([])
 
@@ -71,13 +72,6 @@ function emitAfterTimeout(source$, timeout, value) {
 }
 
 
-function subscribeToDocumentTitle(callback) {
-  const documentTitle$ = pipeDocumentEntitlerItems(state => state.filter((item) => item.title).sort(sortByPriority)[0], TITLE_DEBOUNCE_TIME)
-  const sub = documentTitle$.subscribe(callback)
-
-  return () => sub.unsubscribe()
-}
-
 function subscribeToAnnouncedTitle(callback) {
   const debouncedAnnouncedTitleItem$ = pipeDocumentEntitlerItems((state) => {
     return state.sort(sortByPriority)[0]
@@ -86,45 +80,42 @@ function subscribeToAnnouncedTitle(callback) {
   const announcedTitle$ = debouncedAnnouncedTitleItem$.pipe(
     map((item) => {
       if (!item) {
-        return 'empty'
+        return EMPTY
       }
-      // if title announce is disabled, then we do not announce it
       if (item.disableAnnounceTitle) {
         if (item.title) {
-          // case where announce title is disabled, but context changes, when context changes, we clear all announced ids
           clearAnnouncedIds()
         }
-        return 'empty'
+        return EMPTY
       }
-      // context = some document title was set, that defines one context. If doc title was not set, then the context is the same
-      // e.g.
-      // if modal did not set doc title, that means it didn't change whatever the context was, so we do not reset it, that also means the current item does not set any context and thus it is not necessary to add it to the context
       if (!item.title) {
-        return 'empty'
+        return EMPTY
       }
-      // if modal (or something else) set doc title, that defines a new context
-      // it's possible that the previous item did not set any context, so we need to check whether this new item was already announced or not
-      // if it was not announced, then we announce it
       if (!wasIdAnnounced(item.id)) {
-        clearAnnouncedIds() // clear context
-        addAnnouncedId(item.id) // add the announced title to new context
+        clearAnnouncedIds()
+        addAnnouncedId(item.id)
         return item.title
       } else {
-        // if it was already announced, then we do not announce it, it's as if nothing happened
-        return 'empty'
+        return EMPTY
       }
     })
   )
 
-  const sub = merge(announcedTitle$, emitAfterTimeout(announcedTitle$, TITLE_LIVE_REGION_TIMEOUT, 'empty'))
-    // .pipe(tap((val) => debug('announcedTitle', val)))
+  const sub = merge(announcedTitle$, emitAfterTimeout(announcedTitle$, TITLE_LIVE_REGION_TIMEOUT, EMPTY))
     .subscribe(callback)
 
   return () => sub.unsubscribe()
 }
 
+const FakeComponent = (label) => {
+  subscribeToAnnouncedTitle(val => console.log(`${label}: ${val}`))
+}
+
 delayCall(() => addEntitler({ id: 1, title: 'a', priority: 'page', disableAnnounceTitle: false }), 50)
 delayCall(() => addEntitler({ id: 2, title: 'b', priority: 'modal', disableAnnounceTitle: true }), 80)
-// delayCall(() => removeEntitler(2), 1190)
+delayCall(() => removeEntitler(2), 1190)
+delayCall(() => removeEntitler(1), 1300)
 
-subscribeToAnnouncedTitle(console.log)
+FakeComponent('one')
+// FakeComponent()
+delayCall(() => FakeComponent('two'), 300)
