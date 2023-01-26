@@ -1,4 +1,4 @@
-import { BehaviorSubject, map, distinctUntilChanged, debounce, timer, merge, debounceTime, scan, tap } from 'rxjs';
+import { BehaviorSubject, map, distinctUntilChanged, debounce, timer, merge, debounceTime, scan } from 'rxjs';
 
 let elapsedTime = 0;
 
