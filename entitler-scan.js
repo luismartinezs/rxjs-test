@@ -33,6 +33,28 @@ function emitAfterTimeout(source$, timeout, value) {
   )
 }
 
+function handleHistory(history, item) {
+  if (!item) {
+    return history
+  }
+  const { disableAnnounceTitle, title, id } = item
+  const isIdInHistory = history.find((el) => el.id === id)
+
+  if (title) {
+    if (disableAnnounceTitle) {
+      return [{ ...item, title: '--title-disabled' }]
+    }
+    if (isIdInHistory) {
+      return [{ ...item, title: '--title-repeated' }]
+    }
+    return [item]
+  }
+  if (disableAnnounceTitle) {
+    return [...history, { ...item, title: '--no-title-disabled' }]
+  }
+  return history
+}
+
 export function subscribeToAnnouncedTitle(callback) {
   const announcedTitle$ = documentEntitlerItems$.pipe(
     map((state) => {
@@ -40,25 +62,7 @@ export function subscribeToAnnouncedTitle(callback) {
     }),
     distinctUntilChanged((a, b) => a && b && a.id === b.id),
     debounce(() => timer(TITLE_DEBOUNCE_TIME)),
-    scan((history, item) => {
-      if (!item) {
-        return history
-      }
-      if (item.disableAnnounceTitle) {
-        if (item.title) {
-          return [{ ...item, title: '--disabled-with-title' }]
-        }
-        return [...history, { ...item, title: '--disabled-no-title' }]
-      }
-      if (item.title) {
-        if (history.find((el) => el.id === item.id)) {
-          return [{ ...item, title: '--repeated' }]
-        }
-        return [item]
-      }
-      return [...history, item]
-    }, []),
-    // tap((data) => console.log(data)),
+    scan(handleHistory, []),
     map((data) => data.length > 0 ? data.at(-1).title : '--empty'),
   )
 
@@ -99,6 +103,13 @@ export const cases = {
     delayCall(() => removeEntitler(2), 500)
     delayCall(() => addEntitler({ id: 3, title: 'modal', priority: 1, disableAnnounceTitle: true }), 1e3)
     delayCall(() => removeEntitler(3), 500)
+  },
+  '5.1': () => {
+    delayCall(() => addEntitler({ id: 1, title: 'page', priority: 0, disableAnnounceTitle: false }), 0)
+    delayCall(() => addEntitler({ id: 2, title: '', priority: 10, disableAnnounceTitle: true }), 110)
+    delayCall(() => addEntitler({ id: 3, title: 'modal', priority: 1, disableAnnounceTitle: true }), 110)
+    delayCall(() => removeEntitler(3), 200)
+    delayCall(() => removeEntitler(2), 200)
   }
 }
 
@@ -182,12 +193,12 @@ const FakeComponent = (label) => {
   subscribeToAnnouncedTitle(val => console.log(`${label}: ${parseValue(val)}`))
 }
 
-FakeComponent('X')
-FakeComponent('Y')
+// FakeComponent('X')
+// FakeComponent('Y')
 
 // cases['1']()
 // cases['2.1']()
 // cases['2.2']()
 // cases['3.1']()
-cases['4.1']()
+// cases['5.1']()
 
