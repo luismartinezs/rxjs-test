@@ -26,12 +26,6 @@ function addAnnouncedId(id) {
   }
 }
 
-function removeAnnouncedId(id) {
-  if (id) {
-    announcedIds.delete(id)
-  }
-}
-
 function wasIdAnnounced(id) {
   if (id) {
     return announcedIds.has(id)
@@ -51,17 +45,6 @@ function removeEntitler(id) {
   documentEntitlerItems$.next(documentEntitlerItems$.getValue().filter((item) => item.id !== id))
 }
 
-function pipeDocumentEntitlerItems(
-  mappingFn,
-  debounceTime
-) {
-  return documentEntitlerItems$.pipe(
-    map(mappingFn),
-    distinctUntilChanged(),
-    debounce(() => timer(debounceTime))
-  )
-}
-
 function sortByPriority(a, b) {
   return PRIORITY_SORT_MAP[b.priority] <= PRIORITY_SORT_MAP[a.priority] ? -1 : 1
 }
@@ -72,7 +55,6 @@ function emitAfterTimeout(source$, timeout, value) {
     map(() => value)
   )
 }
-
 
 function subscribeToAnnouncedTitle(callback) {
   const announcedTitle$ = documentEntitlerItems$.pipe(
